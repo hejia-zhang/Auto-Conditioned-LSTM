@@ -35,8 +35,7 @@ def run(demonstrations_dir,
                    demonstration_interface.obs_shape,
                    demonstration_interface.min_obs,
                    demonstration_interface.max_obs,
-                   lr=1e-4,
-                   time_steps=time_steps)
+                   time_steps)
 
     sample_speed = frame_rate / desired_frame_rate
 

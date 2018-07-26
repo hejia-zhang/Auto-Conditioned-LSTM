@@ -1,5 +1,10 @@
+import os.path as osp
+
+import joblib
 import numpy as np
 import tensorflow as tf
+
+from utils import make_path
 
 
 class ACLSTM(object):
@@ -10,8 +15,9 @@ class ACLSTM(object):
                  obs_shape,
                  min_obs,
                  max_obs,
-                 lr,
                  time_steps,
+                 synthesize=False,
+                 lr=1e-4,
                  nb_gtconditioned=5,
                  nb_autoconditioned=5,
                  obs_range=(0, 1)):
@@ -36,6 +42,12 @@ class ACLSTM(object):
                     the time steps over which model will unroll
         """
         self.sess = tf.Session()
+
+        if synthesize:
+            # Input placeholders.
+            self.obs_shape, self.min_obs, self.max_obs = obs_shape, min_obs, max_obs
+            self.boost_obs_series = tf.placeholder(tf.float32, [None, time_steps, obs_shape], 'boost_obs_series')
+
 
         # Input placeholders.
         self.obs_shape, self.min_obs, self.max_obs = obs_shape, min_obs, max_obs
@@ -85,12 +97,12 @@ class ACLSTM(object):
 
         return ac_multilayerd_lstm_loss
 
+    def synthesize(self, boost_data):
+        self.sess.run()
+
     def initialize(self, sess):
         self.sess = sess
         self.sess.run(tf.global_variables_initializer())
-
-    def reset(self):
-        pass
 
     def get_conditioned_lst(self, nb_gtconditioned, nb_autoconditioned, time_steps):
         nb_gt_auto_pairs = int(time_steps / (nb_gtconditioned + nb_autoconditioned)) + 1
@@ -99,5 +111,19 @@ class ACLSTM(object):
         lst = np.concatenate((gt_lst, auto_lst), -1).reshape(-1)
         return np.array(lst[0:time_steps], dtype=bool)
 
+    def save(self, save_path=None):
+        if save_path is None:
+            save_path = osp.join(osp.dirname(__file__), 'models', 'model.lzma')
+        ps = self.sess.run(self.ac_multilayerd_lstm.trainable_vars)
+        make_path(osp.dirname(save_path))
+        joblib.dump(ps, save_path)
 
+    def load(self, load_path=None):
+        if load_path is None:
+            load_path = osp.join(osp.dirname(__file__), 'models', 'model.lzma')
+        loaded_params = joblib.load(load_path)
+        restores = []
+        for p, loaded_p in zip(self.ac_multilayerd_lstm.trainable_vars, loaded_params):
+            restores.append(p.assign(loaded_p))
+        self.sess.run(restores)
 

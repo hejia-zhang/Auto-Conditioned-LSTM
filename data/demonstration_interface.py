@@ -28,17 +28,22 @@ class DemonstrationInterface(object):
         for demonstration in data:
             self.min_length = min(self.min_length, demonstration.shape[0])
 
-    def next_batch(self, batch_size, time_steps, sample_speed):
+    def sample_seq_batch(self,
+                         batch_size,
+                         time_steps,
+                         sample_speed):
         """
-        Get next batch.
+        Sample a batch of motion sequence.
 
-        :param batch_size:
-        :param time_steps:
-        :param sample_speed:
-        :return: np.array
-            with shape size of (batch_size, time_steps, obs_shape)
+        :param batch_size: int
+                    size of the batch
+        :param time_steps: int
+                    length of one sequence
+        :param sample_speed: int
+                    speed of sampleing
+        :return motion sequence batch: np.array[batch_size, time_steps]
         """
-        batch_data = []
+        batch = []
 
         for i in range(batch_size):
             demonstration_idx = np.random.randint(0, len(self.data))
@@ -48,18 +53,10 @@ class DemonstrationInterface(object):
             # the first and last several samples may be very noisy
             start_id = np.random.randint(10, demonstration.shape[0] - time_steps * sample_speed - 10)
 
-            sampled_seq = None
+            seq = []
             for j in range(time_steps):
-                if sampled_seq is None:
-                    sampled_seq = demonstration[start_id + j]
-                else:
-                    sampled_seq = np.vstack((sampled_seq, demonstration[start_id + j]))
+                seq.append(demonstration[start_id + j * sample_speed])
 
-            batch_data.append(sampled_seq)
+            batch.append(seq)
 
-        return np.array(batch_data)
-
-
-
-
-
+        return np.array(batch)
